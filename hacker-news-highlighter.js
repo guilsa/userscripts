@@ -19,8 +19,12 @@
 		// Hacker News uses <a href="user?id=..." class="hnuser"> for author names
 		const commentAuthors = document.querySelectorAll('a[href^="user?id="]')
 
-		console.log('Found', commentAuthors.length, 'comment authors')
-		console.log('Looking for:', names)
+		const meta = {}
+		let count = 0
+		let currentTarget = ''
+
+		// console.log('Found', commentAuthors.length, 'comment authors')
+		// console.log('Looking for:', names)
 
 		// Highlight each comment author that matches
 		for (const authorLink of commentAuthors) {
@@ -32,6 +36,10 @@
 				const index = textLower.indexOf(targetName)
 
 				if (index !== -1) {
+
+					if (!meta[targetName]) meta[targetName] = { count: 0, anchors: [] }
+					meta[targetName]['anchors'].push(authorLink)
+
 					// Keep the original <a> tag and just modify its text
 					// This preserves the hyperlink
 					const span = document.createElement('span')
@@ -55,11 +63,47 @@
 						authorLink.appendChild(afterSpan)
 					}
 
-					console.log('Highlighted:', textContent, 'for', targetName)
+					meta[targetName]['count'] += 1
+					// console.log('Highlighted:', textContent, 'for', targetName)
 					break // Only highlight first match per author
 				}
 			}
 		}
+
+		window.meta = meta
+		window.author = 'pjmlp'
+		window.idx = 0
+
+		window.scrollAction = () => (
+			window.meta[author].anchors[window.idx]
+				.scrollIntoView({ behavior: 'smooth', block: 'start' })
+		)
+
+		window.next = () => {
+			const anchorLen = window.meta[window.author].anchors.length - 1
+			if (window.idx === anchorLen) {
+				window.idx = 0
+			} else {
+				window.idx += 1
+			}
+			window.scrollAction()
+		}
+
+		window.prev = () => {
+			const anchorLen = window.meta[window.author].anchors.length - 1
+			if (window.idx === 0) {
+				window.idx = anchorLen
+			} else {
+				window.idx -= 1
+			}
+			window.scrollAction()
+		}
+
+
+		console.log(window.meta)
+		// const btn = document.createElement('button')
+		// btn.textContent = 'Click me'
+		// document.body.prepend(btn)
 	}
 
 	// Default names to search for (case-insensitive matching)
