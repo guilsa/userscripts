@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         Highlight Hacker News Comment Authors
+// @name         HN Top Commenters — Highlight & Bio Tooltips
 // @namespace    http://tampermonkey.net/
 // @version      1.0
-// @description  Highlights comment author names on Hacker News (news.ycombinator.com)
-// @author       You
+// @description  Highlights selected HN commenters' names and shows their bios on hover. Navigate matches with Ctrl+Shift+N/P. Press Ctrl+Shift+S to search for a different author.
+// @author       Guil Sa
 // @match        https://news.ycombinator.com/*
 // @grant        none
 // ==/UserScript==
