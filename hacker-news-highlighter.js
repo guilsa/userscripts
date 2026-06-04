@@ -99,8 +99,32 @@
 			window.scrollAction()
 		}
 
+		const shortcuts = new Map()
 
-		console.log(window.meta)
+		function bindShortcut(keyCombo, fn) {
+			document.addEventListener('keydown', (e) => {
+				const parts = keyCombo.split('+').map(k => k.toLowerCase())
+				const pressed = []
+				if (e.ctrlKey) pressed.push('ctrl')
+				if (e.shiftKey) pressed.push('shift')
+				if (e.altKey) pressed.push('alt')
+				pressed.push(e.key.toLowerCase())
+
+				if (JSON.stringify(pressed) === JSON.stringify(parts)) {
+					e.preventDefault()
+					fn(e)
+				}
+			})
+		}
+
+		bindShortcut('ctrl+shift+p', () => window.prev())
+		bindShortcut('ctrl+shift+n', () => window.next())
+		bindShortcut('ctrl+shift+s', () => {
+			window.author = prompt('Enter author:')
+		})
+
+
+		// console.log(window.meta)
 		// const btn = document.createElement('button')
 		// btn.textContent = 'Click me'
 		// document.body.prepend(btn)
