@@ -8,6 +8,15 @@
 // @grant        GM_addStyle
 // ==/UserScript==
 
+/*
+Ideas:
+- Key bind should be two keys (not three) to make it easier to use.
+- User should be able to be in front-page HN and do Ctrl + 1 and enter the link #1 HN thread (mouseless browsing).
+- The main (and practically only) user-interaction should be Ctrl + N/P. There shouldn't be any other key binds (for simplicity's sake). As a user, I should be able to move forward/back. All comments by popular authors should be flattened (ie. if user1 says hi then user2 says hello, hitting next twice should move from hi to hello - there shouldn't be a need for other types of interactions).
+- Profile bios should be appended to DOM and always displayed (deprecate popups)
+- What if all viewed threads' popular comments were submitted (along with their metadata) to a local SQLite server (perhaps a Datasette instance). Db schema can be url, title, thread_history as Array: [author, msg].
+*/
+
 ;(function () {
 	'use strict'
 
@@ -19,8 +28,8 @@
 		// Hacker News uses <a href="user?id=..." class="hnuser"> for author names
 		const commentAuthors = document.querySelectorAll('a[href^="user?id="]')
 
+		// TODO: can be window.meta
 		const meta = {}
-		let count = 0
 		let currentTarget = ''
 
 		// console.log('Found', commentAuthors.length, 'comment authors')
@@ -37,7 +46,7 @@
 
 				if (index !== -1) {
 
-					if (!meta[targetName]) meta[targetName] = { count: 0, anchors: [] }
+					if (!meta[targetName]) meta[targetName] = { anchors: [] }
 					meta[targetName]['anchors'].push(authorLink)
 
 					// Keep the original <a> tag and just modify its text
@@ -63,42 +72,51 @@
 						authorLink.appendChild(afterSpan)
 					}
 
-					meta[targetName]['count'] += 1
 					// console.log('Highlighted:', textContent, 'for', targetName)
 					break // Only highlight first match per author
 				}
 			}
 		}
 
+		
 		// --- Global states ---
+		window.authors = Object.keys(meta) // have access to an authors' list (take the keys from meta as they have the author's names)
 		window.meta = meta
-		window.author = 'pjmlp'
-		window.idx = 0
+		window.authorIdx = 0
+		window.anchorIdx = 0
+		window.author = window.authors[0]
+		console.log(window.meta[window.author])
 
 		// --- Scroll function ---
 		window.scrollAction = () => (
-			window.meta[author].anchors[window.idx]
+			window.meta[window.author].anchors[window.anchorIdx]
 				.scrollIntoView({ behavior: 'smooth', block: 'start' })
 		)
 
 		// --- Next and Prev ---
 		window.next = () => {
-			const anchorLen = window.meta[window.author].anchors.length - 1
-			if (window.idx === anchorLen) {
-				window.idx = 0
+			const anchorLen = window.meta[window.author].anchors.length
+			if (window.anchorIdx === anchorLen) {
+				window.anchorIdx = 0
 			} else {
-				window.idx += 1
+				window.anchorIdx += 1
 			}
 			window.scrollAction()
 		}
 
 		window.prev = () => {
-			const anchorLen = window.meta[window.author].anchors.length - 1
-			if (window.idx === 0) {
-				window.idx = anchorLen
+			const anchorLen = window.meta[window.author].anchors.length
+			if (window.anchorIdx === 0) {
+				window.anchorIdx = anchorLen
 			} else {
-				window.idx -= 1
+				window.anchorIdx -= 1
 			}
+			window.scrollAction()
+		}
+
+		window.nextAuthor = () => {
+			window.authorIdx = (window.authorIdx + 1) % window.authors.length
+			window.author = window.authors[window.authorIdx]
 			window.scrollAction()
 		}
 
@@ -126,12 +144,13 @@
 		const modal = document.createElement('dialog');
 		modal.id = 'modal';
 		modal.innerHTML = `
-			<h2>Author:</h2>
-			<p>You current have author <strong>${window.author}</strong> selected.</p>
+			<h2>Tip:</h2>
+			<p>You have author <strong>${window.authors[window.authorIdx]}</strong> selected.</p>
+			<p><span style="background-color: yellow !important;">Yellow</span> authors have bios when hovered. These are popular Hacker News profiles.</p>
 			<h2>Key Bindings:</h2>
-			<p><strong>Ctrl + Shift + N</strong> – move to author's next comment</p>
-			<p><strong>Ctrl + Shift + P</strong> – move to author's previous comment</p>
+			<p><strong>Ctrl + Shift + N or P</strong> – author's next / prev comment</p>
 			<p><strong>Ctrl + Shift + S</strong> – set new author</p>
+			<p><strong>Ctrl + Shift + M</strong> – move to next author</p>
 			<p><strong>Ctrl + Shift + H</strong> – open this modal</p>
 			<button id="close">OK</button>
 		`;
@@ -141,6 +160,7 @@
 		// --- Key Binds ---
 		bindShortcut('ctrl+shift+p', () => window.prev())
 		bindShortcut('ctrl+shift+n', () => window.next())
+		bindShortcut('ctrl+shift+m', () => window.nextAuthor())
 		bindShortcut('ctrl+shift+s', () => window.author = prompt('Enter author:'))
 		bindShortcut('ctrl+shift+H', () => modal.showModal());
 	}
