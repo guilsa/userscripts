@@ -5,7 +5,7 @@
 // @description  Highlights selected HN commenters' names and shows their bios on hover. Navigate matches with Ctrl+Shift+N/P. Press Ctrl+Shift+S to search for a different author.
 // @author       Guil Sa
 // @match        https://news.ycombinator.com/*
-// @grant        none
+// @grant        GM_addStyle
 // ==/UserScript==
 
 ;(function () {
@@ -70,15 +70,18 @@
 			}
 		}
 
+		// --- Global states ---
 		window.meta = meta
 		window.author = 'pjmlp'
 		window.idx = 0
 
+		// --- Scroll function ---
 		window.scrollAction = () => (
 			window.meta[author].anchors[window.idx]
 				.scrollIntoView({ behavior: 'smooth', block: 'start' })
 		)
 
+		// --- Next and Prev ---
 		window.next = () => {
 			const anchorLen = window.meta[window.author].anchors.length - 1
 			if (window.idx === anchorLen) {
@@ -117,17 +120,29 @@
 			})
 		}
 
+		// --- Modal ---
+		GM_addStyle(`dialog::backdrop { background: rgba(0, 0, 0, 0.5); }`);
+
+		const modal = document.createElement('dialog');
+		modal.id = 'modal';
+		modal.innerHTML = `
+			<h2>Author:</h2>
+			<p>You current have author <strong>${window.author}</strong> selected.</p>
+			<h2>Key Bindings:</h2>
+			<p><strong>Ctrl + Shift + N</strong> – move to author's next comment</p>
+			<p><strong>Ctrl + Shift + P</strong> – move to author's previous comment</p>
+			<p><strong>Ctrl + Shift + S</strong> – set new author</p>
+			<p><strong>Ctrl + Shift + H</strong> – open this modal</p>
+			<button id="close">OK</button>
+		`;
+		document.body.appendChild(modal);		
+		modal.querySelector('#close').onclick = () => modal.close();
+
+		// --- Key Binds ---
 		bindShortcut('ctrl+shift+p', () => window.prev())
 		bindShortcut('ctrl+shift+n', () => window.next())
-		bindShortcut('ctrl+shift+s', () => {
-			window.author = prompt('Enter author:')
-		})
-
-
-		// console.log(window.meta)
-		// const btn = document.createElement('button')
-		// btn.textContent = 'Click me'
-		// document.body.prepend(btn)
+		bindShortcut('ctrl+shift+s', () => window.author = prompt('Enter author:'))
+		bindShortcut('ctrl+shift+H', () => modal.showModal());
 	}
 
 	// Default names to search for (case-insensitive matching)
