@@ -133,7 +133,6 @@ Ideas:
 		modal.id = 'modal';
 		modal.innerHTML = `
 			<h2>Tip:</h2>
-			<p>You have author <strong>${window.authors[window.authorIdx]}</strong> selected.</p>
 			<p><span style="background-color: yellow !important;">Yellow</span> authors have bios when hovered. These are popular Hacker News profiles.</p>
 			<h2>Key Bindings:</h2>
 			<p><strong>Ctrl + Shift + N or P</strong> – next / prev comment</p>
