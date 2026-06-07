@@ -11,7 +11,6 @@
 /*
 Ideas:
 - User should be able to be in front-page HN and do Ctrl + 1 and enter the link #1 HN thread (mouseless browsing).
-- Profile bios should be appended to DOM and always displayed (deprecate popups)
 - What if all viewed threads' popular comments were submitted (along with their metadata) to a local SQLite server (perhaps a Datasette instance). Db schema can be url, title, thread_history as Array: [author, msg].
 */
 
@@ -33,12 +32,20 @@ Ideas:
 		for (const authorLink of commentAuthors) {
 			const textContent = authorLink.textContent
 			const textLower = textContent.toLowerCase()
-
+			
 			// Check if any of the target names are in this author
 			for (const targetName of normalizedNames) {
 				const index = textLower.indexOf(targetName)
-
+				
 				if (index !== -1) {
+					// --- Append bio to DOM ---
+					const bio = document.createElement('div')
+					bio.textContent = bios[textLower] // get info from our `bios` Object
+					bio.style.setProperty('color', 'darkgray', 'important')
+					bio.style.setProperty('background-color', 'ghostwhite', 'important')
+					bio.classList.add('subtext')
+					authorLink.parentElement.insertAdjacentElement('afterend', bio)
+
 					window.anchors.push(authorLink)
 					if (!window.authors.includes(targetName)) {
 						window.authors.push(targetName)
@@ -67,13 +74,11 @@ Ideas:
 						authorLink.appendChild(afterSpan)
 					}
 
-					// console.log('Highlighted:', textContent, 'for', targetName)
 					break // Only highlight first match per author
 				}
 			}
 		}
 
-		
 		// --- Global states ---
 		window.anchorIdx = 0
 
