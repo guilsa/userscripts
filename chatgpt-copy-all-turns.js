@@ -13,7 +13,6 @@
 	'use strict'
 
 	const COPY_BUTTON_SELECTOR = '[data-testid="copy-turn-action-button"]'
-	const BADGE_CLASS = 'copy-turn-action-index'
 	const ITEM_SEPARATOR = '\n\n\n'
 	const COPY_TIMEOUT_MS = 1_000
 	const SCROLL_SETTLE_MS = 500
@@ -23,49 +22,14 @@
 	let refreshFrame
 	const pageWindow = unsafeWindow
 
-	window.copyTurnActionButtons = copyTurnActionButtons
-	window.copyAllTurnActions = copyAllTurnActions
-	window.copyAllTurnsFromTop = copyAllTurnsFromTop
-
 	function refreshCopyButtons() {
 		const buttons = Array.from(document.querySelectorAll(COPY_BUTTON_SELECTOR))
 		const buttonsChanged = buttons.length !== copyTurnActionButtons.length
 			|| buttons.some((button, index) => button !== copyTurnActionButtons[index])
 
-		buttons.forEach(addIndexBadge)
 		if (!buttonsChanged) return
 
 		copyTurnActionButtons.splice(0, copyTurnActionButtons.length, ...buttons)
-		console.log('copyTurnActionButtons:', copyTurnActionButtons)
-	}
-
-	function addIndexBadge(button, index) {
-		button.style.setProperty('background-color', 'yellow', 'important')
-		button.style.setProperty('position', 'relative', 'important')
-
-		let badge = button.querySelector(`:scope > .${BADGE_CLASS}`)
-		if (!badge) {
-			badge = document.createElement('span')
-			badge.className = BADGE_CLASS
-			badge.setAttribute('aria-hidden', 'true')
-			badge.style.cssText = [
-				'position: absolute !important',
-				'top: -8px !important',
-				'right: -8px !important',
-				'padding: 1px 4px !important',
-				'border-radius: 999px !important',
-				'background: #111 !important',
-				'color: #fff !important',
-				'font: 11px/1 monospace !important',
-				'pointer-events: none !important',
-			].join(';')
-			button.appendChild(badge)
-		}
-
-		const label = String(index)
-		if (badge.textContent !== label) {
-			badge.textContent = label
-		}
 	}
 
 	function scheduleRefresh() {
