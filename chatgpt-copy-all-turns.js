@@ -2,7 +2,7 @@
 // @name         ChatGPT Copy All Turns
 // @namespace    http://tampermonkey.net/
 // @version      1.0
-// @description  Copies all ChatGPT turns in page order with spacing between items.
+// @description  Copies all ChatGPT turns in page order with Markdown dividers.
 // @author       Guil Sa
 // @match        https://chatgpt.com/*
 // @grant        GM_setClipboard
@@ -13,7 +13,7 @@
 	'use strict'
 
 	const COPY_BUTTON_SELECTOR = '[data-testid="copy-turn-action-button"]'
-	const ITEM_SEPARATOR = '\n\n\n'
+	const TURN_SEPARATOR = '\n\n---\n\n'
 	const COPY_TIMEOUT_MS = 1_000
 	const SCROLL_SETTLE_MS = 500
 	const SCROLL_TIMEOUT_MS = 5_000
@@ -181,7 +181,7 @@
 				items.push(await copyCapture.click(button, index))
 			}
 
-			const text = items.map((item) => `${item}${ITEM_SEPARATOR}`).join('')
+			const text = items.join(TURN_SEPARATOR)
 			GM_setClipboard(text, 'text')
 			console.log(`Copied ${items.length} items to clipboard.`, text)
 		} catch (error) {
