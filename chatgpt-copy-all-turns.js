@@ -16,12 +16,16 @@
 	const BADGE_CLASS = 'copy-turn-action-index'
 	const ITEM_SEPARATOR = '\n\n\n'
 	const COPY_TIMEOUT_MS = 1_000
+	const SCROLL_SETTLE_MS = 500
+	const SCROLL_TIMEOUT_MS = 5_000
+	const POLL_INTERVAL_MS = 100
 	const copyTurnActionButtons = []
 	let refreshFrame
 	const pageWindow = unsafeWindow
 
 	window.copyTurnActionButtons = copyTurnActionButtons
 	window.copyAllTurnActions = copyAllTurnActions
+	window.copyAllTurnsFromTop = copyAllTurnsFromTop
 
 	function refreshCopyButtons() {
 		const buttons = Array.from(document.querySelectorAll(COPY_BUTTON_SELECTOR))
@@ -67,6 +71,55 @@
 	function scheduleRefresh() {
 		cancelAnimationFrame(refreshFrame)
 		refreshFrame = requestAnimationFrame(refreshCopyButtons)
+	}
+
+	function findScrollContainer() {
+		let element = copyTurnActionButtons[0]
+
+		while (element?.parentElement) {
+			element = element.parentElement
+			const { overflowY } = getComputedStyle(element)
+			if (['auto', 'scroll', 'overlay'].includes(overflowY)
+				&& element.scrollHeight > element.clientHeight) {
+				return element
+			}
+		}
+
+		return document.scrollingElement
+	}
+
+	function wait(ms) {
+		return new Promise((resolve) => setTimeout(resolve, ms))
+	}
+
+	function haveSameButtons(first, second) {
+		return first.length === second.length
+			&& first.every((button, index) => button === second[index])
+	}
+
+	async function waitForCopyButtonsToSettle() {
+		const deadline = Date.now() + SCROLL_TIMEOUT_MS
+		let previousButtons = []
+		let stableSince
+
+		while (Date.now() < deadline) {
+			await wait(POLL_INTERVAL_MS)
+			const buttons = Array.from(document.querySelectorAll(COPY_BUTTON_SELECTOR))
+			const buttonsAreStable = buttons.length > 0
+				&& haveSameButtons(buttons, previousButtons)
+
+			refreshCopyButtons()
+			previousButtons = buttons
+
+			if (buttonsAreStable) {
+				stableSince ??= Date.now()
+				if (Date.now() - stableSince >= SCROLL_SETTLE_MS) return
+			} else {
+				stableSince = undefined
+			}
+		}
+
+		throw new Error('Copy buttons did not settle after scrolling to the top.')
 	}
 
 	function captureCopiedText() {
@@ -174,10 +227,23 @@
 		}
 	}
 
+	async function copyAllTurnsFromTop() {
+		const scrollContainer = findScrollContainer()
+		scrollContainer.scrollTop = 0
+		console.log('Scrolled to the top of the conversation.')
+
+		try {
+			await waitForCopyButtonsToSettle()
+			await copyAllTurnActions()
+		} catch (error) {
+			console.error('Unable to prepare the conversation for copying.', error)
+		}
+	}
+
 	function handleKeydown(event) {
 		if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === 'c') {
 			event.preventDefault()
-			copyAllTurnActions()
+			copyAllTurnsFromTop()
 		}
 	}
 
