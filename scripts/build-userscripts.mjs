@@ -1,0 +1,50 @@
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
+
+const manifest = JSON.parse(await readFile('userscripts.json', 'utf8'))
+const scriptNames = process.argv.slice(2)
+const selectedNames = scriptNames.length ? scriptNames : Object.keys(manifest.scripts)
+const timestamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14)
+const version = `${timestamp.slice(0, 8)}.${timestamp.slice(8)}`
+const useColor = process.stdout.isTTY
+
+function style(code, text) {
+	return useColor ? `\u001B[${code}m${text}\u001B[0m` : text
+}
+
+const bold = (text) => style(1, text)
+const blue = (text) => style(34, text)
+const cyan = (text) => style(36, text)
+const dim = (text) => style(2, text)
+const green = (text) => style(32, text)
+
+function setMetadata(source, name, value) {
+	const line = `// @${name.padEnd(12)} ${value}`
+	const pattern = new RegExp(`^// @${name}\\s+.*$`, 'm')
+
+	return pattern.test(source)
+		? source.replace(pattern, line)
+		: source.replace('// ==/UserScript==', `${line}\n// ==/UserScript==`)
+}
+
+await mkdir('dist', { recursive: true })
+
+for (const name of selectedNames) {
+	const script = manifest.scripts[name]
+	if (!script) throw new Error(`Unknown userscript: ${name}`)
+
+	const url = `${manifest.server}/${script.output}`
+	let output = await readFile(script.source, 'utf8')
+	output = setMetadata(output, 'version', version)
+	output = setMetadata(output, 'updateURL', url)
+	output = setMetadata(output, 'downloadURL', url)
+
+	await writeFile(`dist/${script.output}`, output)
+	console.log(`\n${green('[built]')} ${bold(`dist/${script.output}`)}`)
+	console.log(`  ${dim('Version')}  ${cyan(version)}`)
+	console.log(`  ${dim('URL')}      ${blue(url)}`)
+}
+
+console.log(`\n${bold('Next steps')}`)
+console.log(`  1. ${dim('Serve')}   ${cyan('make serve')}`)
+console.log(`  2. ${dim('Install')} Open the URL above in Firefox.`)
+console.log(`  3. ${dim('Update')}  Rebuild, check for userscript updates, then reload the site.`)
