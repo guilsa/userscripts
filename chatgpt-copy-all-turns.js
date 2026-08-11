@@ -5,27 +5,33 @@
 // @description  Copies all ChatGPT turns in page order with spacing between items.
 // @author       Guil Sa
 // @match        https://chatgpt.com/*
-// @grant        none
+// @grant        GM_setClipboard
+// @grant        unsafeWindow
 // ==/UserScript==
 
 ;(function () {
 	'use strict'
 
 	const COPY_BUTTON_SELECTOR = '[data-testid="copy-turn-action-button"]'
-	const TURN_SELECTOR = 'article, [data-testid^="conversation-turn-"]'
-	const CONTENT_SELECTOR = '.markdown'
 	const BADGE_CLASS = 'copy-turn-action-index'
 	const ITEM_SEPARATOR = '\n\n\n'
+	const COPY_TIMEOUT_MS = 1_000
 	const copyTurnActionButtons = []
 	let refreshFrame
+	const pageWindow = unsafeWindow
 
 	window.copyTurnActionButtons = copyTurnActionButtons
 	window.copyAllTurnActions = copyAllTurnActions
 
 	function refreshCopyButtons() {
 		const buttons = Array.from(document.querySelectorAll(COPY_BUTTON_SELECTOR))
-		copyTurnActionButtons.splice(0, copyTurnActionButtons.length, ...buttons)
+		const buttonsChanged = buttons.length !== copyTurnActionButtons.length
+			|| buttons.some((button, index) => button !== copyTurnActionButtons[index])
+
 		buttons.forEach(addIndexBadge)
+		if (!buttonsChanged) return
+
+		copyTurnActionButtons.splice(0, copyTurnActionButtons.length, ...buttons)
 		console.log('copyTurnActionButtons:', copyTurnActionButtons)
 	}
 
@@ -52,22 +58,95 @@
 			button.appendChild(badge)
 		}
 
-		badge.textContent = index
-	}
-
-	function getTurnText(button) {
-		const turn = button.closest(TURN_SELECTOR)
-		const content = turn?.querySelector(CONTENT_SELECTOR) ?? turn
-		return content?.innerText.trimEnd() ?? ''
-	}
-
-	function getTurnTexts() {
-		return copyTurnActionButtons.map(getTurnText).filter(Boolean)
+		const label = String(index)
+		if (badge.textContent !== label) {
+			badge.textContent = label
+		}
 	}
 
 	function scheduleRefresh() {
 		cancelAnimationFrame(refreshFrame)
 		refreshFrame = requestAnimationFrame(refreshCopyButtons)
+	}
+
+	function captureCopiedText() {
+		const clipboard = pageWindow.navigator.clipboard
+		const originalWriteText = Object.getOwnPropertyDescriptor(clipboard, 'writeText')
+		const originalWrite = Object.getOwnPropertyDescriptor(clipboard, 'write')
+		let pendingCopy
+
+		function resolvePendingCopy(text) {
+			if (!pendingCopy) return
+
+			clearTimeout(pendingCopy.timeout)
+			pendingCopy.resolve(text)
+			pendingCopy = null
+		}
+
+		function rejectPendingCopy(error) {
+			if (!pendingCopy) return
+
+			clearTimeout(pendingCopy.timeout)
+			pendingCopy.reject(error)
+			pendingCopy = null
+		}
+
+		Object.defineProperty(clipboard, 'writeText', {
+			configurable: true,
+			value(text) {
+				resolvePendingCopy(String(text))
+				return Promise.resolve()
+			},
+		})
+
+		Object.defineProperty(clipboard, 'write', {
+			configurable: true,
+			value(items) {
+				const textItem = items.find((item) => item.types.includes('text/plain'))
+				if (!textItem) {
+					rejectPendingCopy(new Error('Copy action did not provide text/plain data.'))
+					return Promise.resolve()
+				}
+
+				return textItem.getType('text/plain')
+					.then((blob) => blob.text())
+					.then(resolvePendingCopy)
+					.catch(rejectPendingCopy)
+			},
+		})
+
+		return {
+			click(button, index) {
+				return new Promise((resolve, reject) => {
+					const timeout = setTimeout(() => {
+						pendingCopy = null
+						reject(new Error(`Copy button ${index} did not write text to the clipboard.`))
+					}, COPY_TIMEOUT_MS)
+
+					pendingCopy = { resolve, reject, timeout }
+					try {
+						button.click()
+					} catch (error) {
+						clearTimeout(timeout)
+						pendingCopy = null
+						reject(error)
+					}
+				})
+			},
+			restore() {
+				if (originalWriteText) {
+					Object.defineProperty(clipboard, 'writeText', originalWriteText)
+				} else {
+					delete clipboard.writeText
+				}
+
+				if (originalWrite) {
+					Object.defineProperty(clipboard, 'write', originalWrite)
+				} else {
+					delete clipboard.write
+				}
+			},
+		}
 	}
 
 	async function copyAllTurnActions() {
@@ -76,14 +155,22 @@
 			return
 		}
 
-		const items = getTurnTexts()
-		const text = items.map((item) => `${item}${ITEM_SEPARATOR}`).join('')
+		let copyCapture
 
 		try {
-			await navigator.clipboard.writeText(text)
+			copyCapture = captureCopiedText()
+			const items = []
+			for (const [index, button] of copyTurnActionButtons.entries()) {
+				items.push(await copyCapture.click(button, index))
+			}
+
+			const text = items.map((item) => `${item}${ITEM_SEPARATOR}`).join('')
+			GM_setClipboard(text, 'text')
 			console.log(`Copied ${items.length} items to clipboard.`, text)
 		} catch (error) {
-			console.error('Unable to write the items to the clipboard.', error)
+			console.error('Unable to copy all turns.', error)
+		} finally {
+			copyCapture?.restore()
 		}
 	}
 
