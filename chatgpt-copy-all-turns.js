@@ -168,7 +168,7 @@
 
 	new MutationObserver(() => {
 		cancelAnimationFrame(refreshFrame)
-		refreshFrame = requestAnimationFrame(refreshCopyButtons)
+		refreshFrame = requestAnimationFrame(() => refreshCopyButtons())
 	}).observe(document.documentElement, {
 		childList: true,
 		subtree: true,
