@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         HN Top Commenters — Highlight & Bio Tooltips
-// @namespace    http://tampermonkey.net/
+// @namespace    https://violentmonkey.github.io/
 // @version      1.0
 // @description  Highlights selected HN commenters' names and shows their bios on hover. Navigate matches with Ctrl+Shift+N/P. Press Ctrl+Shift+S to search for a different author.
 // @author       Guil Sa

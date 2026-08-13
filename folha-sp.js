@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Folha SP: Remove Unwanted Noise
-// @namespace    http://tampermonkey.net/
+// @namespace    https://violentmonkey.github.io/
 // @version      1.0
 // @description  Remove sponsor/partnership section from folha.uol.com.br
 // @author       You

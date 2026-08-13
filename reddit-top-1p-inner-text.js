@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Reddit Top 1% — Extract Inner Text
-// @namespace    http://tampermonkey.net/
+// @namespace    https://violentmonkey.github.io/
 // @version      2.2
 // @description  Extracts the comments from each "Top 1% Commenter" badge by traversing the DOM.
 // @author       Gui

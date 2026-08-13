@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Reddit Top 1% Commenter — Scroll Finder
-// @namespace    http://tampermonkey.net/
+// @namespace    https://violentmonkey.github.io/
 // @version      1.0
 // @description  Highlights "Top 1% Commenter" badges and lets you scroll between them with Ctrl+Shift+N/P.
 // @author       Gui

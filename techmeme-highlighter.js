@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Highlight Bloomberg on TechMeme
-// @namespace    http://tampermonkey.net/
+// @namespace    https://violentmonkey.github.io/
 // @version      1.0
 // @description  Highlights all instances of the word "Bloomberg" on techmeme.com without rendering HTML tags as text
 // @author       You

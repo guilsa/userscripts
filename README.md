@@ -1,6 +1,6 @@
 # Userscripts
 
-## Local Tampermonkey Development
+## Local Violentmonkey Development
 
 `userscripts.json` is the manifest for scripts published through the local development server. The build generates versioned artifacts in `dist/` and injects their `@updateURL` and `@downloadURL` metadata.
 
@@ -50,7 +50,7 @@ Restart the watcher after adding or removing manifest entries so it watches the 
 
 ### Initial Installation
 
-Open the generated userscript URL in Firefox and confirm the Tampermonkey installation:
+Open the generated userscript URL in Firefox and confirm the Violentmonkey installation:
 
 ```text
 http://127.0.0.1:8787/chatgpt-copy-all-turns.user.js
@@ -59,10 +59,16 @@ http://127.0.0.1:8787/chatgpt-copy-all-turns.user.js
 ### Updating
 
 1. Run `make build`, `make build SCRIPT=<name>`, or leave `make watch` running.
-2. In Tampermonkey, enable Automatic installation with a suitable update-check interval. If you leave it disabled, check for userscript updates and install the available update manually.
+2. In Violentmonkey, use Check for updates to install the latest local build. You can instead enable automatic updates, but its interval is not intended for rapid development.
 3. Reload the matching site.
 
-After the initial installation, do not open the generated URL again. The server only needs to be running when Tampermonkey checks for an update. The last installed script continues to run while it is off.
+After the initial installation, do not open the generated URL again. The server only needs to be running when Violentmonkey checks for an update. The last installed script continues to run while it is off.
+
+### Migrating from Tampermonkey
+
+1. Disable the Tampermonkey copy before enabling the same script in Violentmonkey, so both managers do not run it.
+2. Install the generated userscript URL through Violentmonkey.
+3. Verify the script on its matching site before removing the Tampermonkey copy.
 
 ### Adding a Script
 

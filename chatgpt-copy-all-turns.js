@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         ChatGPT Copy All Turns
-// @namespace    http://tampermonkey.net/
+// @namespace    https://violentmonkey.github.io/
 // @version      1.0
 // @description  Copies all ChatGPT turns in page order with Markdown dividers.
 // @author       Guil Sa

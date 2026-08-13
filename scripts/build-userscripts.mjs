@@ -46,5 +46,5 @@ for (const name of selectedNames) {
 
 console.log(`\n${bold('Next steps')}`)
 console.log(`  1. ${dim('Serve')}   ${cyan('make serve')}`)
-console.log(`  2. ${dim('Install')} Open the URL above in Firefox.`)
-console.log(`  3. ${dim('Update')}  Rebuild, check for userscript updates, then reload the site.`)
+console.log(`  2. ${dim('Install')} Open the URL above in Firefox with Violentmonkey enabled.`)
+console.log(`  3. ${dim('Update')}  Rebuild, check for updates in Violentmonkey, then reload the site.`)
