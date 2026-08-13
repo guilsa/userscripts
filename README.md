@@ -50,10 +50,15 @@ Restart the watcher after adding or removing manifest entries so it watches the 
 
 ### Initial Installation
 
-Open the generated userscript URL in Firefox and confirm the Violentmonkey installation:
+Open a generated userscript URL in Firefox and confirm the Violentmonkey installation:
 
 ```text
 http://127.0.0.1:8787/chatgpt-copy-all-turns.user.js
+http://127.0.0.1:8787/folha-sp.user.js
+http://127.0.0.1:8787/hacker-news-highlighter.user.js
+http://127.0.0.1:8787/reddit-top-1p-inner-text.user.js
+http://127.0.0.1:8787/reddit.user.js
+http://127.0.0.1:8787/techmeme-highlighter.user.js
 ```
 
 ### Updating
@@ -69,6 +74,14 @@ After the initial installation, do not open the generated URL again. The server 
 1. Disable the Tampermonkey copy before enabling the same script in Violentmonkey, so both managers do not run it.
 2. Install the generated userscript URL through Violentmonkey.
 3. Verify the script on its matching site before removing the Tampermonkey copy.
+
+### Validation Checklist
+
+1. ChatGPT: press `Ctrl` + `Shift` + `C` and verify all turns are copied.
+2. Hacker News: verify commenter highlighting, bios, and keyboard navigation.
+3. Reddit: verify badge highlighting/navigation and comment extraction.
+4. Folha: verify unwanted sections are removed.
+5. Techmeme: verify Bloomberg references are highlighted.
 
 ### Adding a Script
 
