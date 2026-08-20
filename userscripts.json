@@ -1,6 +1,10 @@
 {
 	"server": "http://127.0.0.1:8787",
 	"scripts": {
+		"chatgpt-background": {
+			"source": "chatgpt-background.js",
+			"output": "chatgpt-background.user.js"
+		},
 		"chatgpt-copy-all-turns": {
 			"source": "chatgpt-copy-all-turns.js",
 			"output": "chatgpt-copy-all-turns.user.js"
