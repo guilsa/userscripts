@@ -87,6 +87,15 @@ After the initial installation, do not open the generated URL again. The server 
 5. Folha: verify unwanted sections are removed.
 6. Techmeme: verify Bloomberg references are highlighted.
 
+### Headless Integration Test
+
+The sibling [userscript-agent-runtime](https://github.com/guilsa/userscript-agent-runtime) repository provides deterministic Playwright coverage for `google-hn-points.js`, including comment-to-story resolution, persistent cache rendering, and expired-score refreshes:
+
+```sh
+cd ../userscript-agent-runtime
+npm run test:reference
+```
+
 ### Adding a Script
 
 1. Add its source and standard userscript metadata.
