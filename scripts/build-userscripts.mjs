@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises'
 
 const manifest = JSON.parse(await readFile('userscripts.json', 'utf8'))
 const scriptNames = process.argv.slice(2)
@@ -26,12 +26,21 @@ function setMetadata(source, name, value) {
 		: source.replace('// ==/UserScript==', `${line}\n// ==/UserScript==`)
 }
 
-await mkdir('dist', { recursive: true })
-
-for (const name of selectedNames) {
+const selectedScripts = await Promise.all(selectedNames.map(async (name) => {
 	const script = manifest.scripts[name]
 	if (!script) throw new Error(`Unknown userscript: ${name}`)
 
+	const { mtime } = await stat(script.source)
+	return { name, script, updatedAt: mtime }
+}))
+
+selectedScripts.sort((left, right) => (
+	right.updatedAt - left.updatedAt || left.name.localeCompare(right.name)
+))
+
+await mkdir('dist', { recursive: true })
+
+for (const { script, updatedAt } of selectedScripts) {
 	const url = `${manifest.server}/${script.output}`
 	let output = await readFile(script.source, 'utf8')
 	output = setMetadata(output, 'version', version)
@@ -41,10 +50,11 @@ for (const name of selectedNames) {
 	await writeFile(`dist/${script.output}`, output)
 	console.log(`\n${green('[built]')} ${bold(`dist/${script.output}`)}`)
 	console.log(`  ${dim('Version')}  ${cyan(version)}`)
+	console.log(`  ${dim('Updated')}  ${updatedAt.toLocaleString()}`)
 	console.log(`  ${dim('URL')}      ${blue(url)}`)
 }
 
 console.log(`\n${bold('Next steps')}`)
 console.log(`  1. ${dim('Serve')}   ${cyan('make serve')}`)
-console.log(`  2. ${dim('Install')} Open the URL above in Firefox with Violentmonkey enabled.`)
+console.log(`  2. ${dim('Install')} Open a URL above in Firefox with Violentmonkey enabled.`)
 console.log(`  3. ${dim('Update')}  Rebuild, check for updates in Violentmonkey, then reload the site.`)

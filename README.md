@@ -22,6 +22,8 @@ Serve all generated files at `http://127.0.0.1:8787`:
 make serve
 ```
 
+Build output lists install links by source-file modification time, newest first.
+
 Watch every manifest entry and rebuild on changes:
 
 ```sh
