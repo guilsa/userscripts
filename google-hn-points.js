@@ -15,6 +15,7 @@
 	'use strict'
 
 	const MAX_CONCURRENT_REQUESTS = 3
+	const MAX_PARENT_HOPS = 12
 	const BADGE_CLASS = 'google-hn-points-badge'
 
 	GM_addStyle(`
@@ -120,12 +121,55 @@
 		})
 	}
 
-	function readPoints(html) {
-		const page = new DOMParser().parseFromString(html, 'text/html')
+	function readPoints(page) {
 		const score = page.querySelector('.subtext .score, .score')
 		const match = score?.textContent.match(/\d[\d,]*/)
 
 		return match ? Number(match[0].replaceAll(',', '')) : null
+	}
+
+	function getNextScoreUrl(page, currentUrl) {
+		const storyLink = page.querySelector('.onstory a[href]')
+		const parentLink = Array.from(page.querySelectorAll('.navs a[href]'))
+			.find((link) => link.textContent.trim().toLowerCase() === 'parent')
+		const href = (storyLink || parentLink)?.getAttribute('href')
+
+		if (!href) return null
+
+		try {
+			const url = new URL(href, currentUrl)
+			if (url.hostname !== 'news.ycombinator.com') return null
+
+			url.hash = ''
+			return url.href
+		} catch {
+			return null
+		}
+	}
+
+	async function findPoints(startUrl) {
+		const visitedUrls = new Set()
+		let currentUrl = startUrl
+
+		for (let hop = 0; hop <= MAX_PARENT_HOPS; hop += 1) {
+			const url = new URL(currentUrl)
+			url.hash = ''
+			currentUrl = url.href
+
+			if (visitedUrls.has(currentUrl)) return null
+			visitedUrls.add(currentUrl)
+
+			const html = await requestHtml(currentUrl)
+			const page = new DOMParser().parseFromString(html, 'text/html')
+			const points = readPoints(page)
+
+			if (points !== null) return points
+
+			currentUrl = getNextScoreUrl(page, currentUrl)
+			if (!currentUrl) return null
+		}
+
+		return null
 	}
 
 	function getOrCreateBadge(heading) {
@@ -174,10 +218,10 @@
 		setBadge(badge, 'loading', 'HN · checking…')
 
 		try {
-			const points = readPoints(await requestHtml(url))
+			const points = await findPoints(url)
 
 			if (points === null) {
-				setBadge(badge, 'error', 'HN · no score', 'This HN page does not expose a story score.')
+				setBadge(badge, 'error', 'HN · no score', 'No story score was found after following the HN parent thread.')
 				return false
 			}
 
