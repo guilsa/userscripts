@@ -13,6 +13,10 @@
 			"source": "folha-sp.js",
 			"output": "folha-sp.user.js"
 		},
+		"google-hn-points": {
+			"source": "google-hn-points.js",
+			"output": "google-hn-points.user.js"
+		},
 		"hacker-news-highlighter": {
 			"source": "hacker-news-highlighter.js",
 			"output": "hacker-news-highlighter.user.js"

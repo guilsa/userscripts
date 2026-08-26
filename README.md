@@ -55,6 +55,7 @@ Open a generated userscript URL in Firefox and confirm the Violentmonkey install
 ```text
 http://127.0.0.1:8787/chatgpt-copy-all-turns.user.js
 http://127.0.0.1:8787/folha-sp.user.js
+http://127.0.0.1:8787/google-hn-points.user.js
 http://127.0.0.1:8787/hacker-news-highlighter.user.js
 http://127.0.0.1:8787/reddit-top-1p-inner-text.user.js
 http://127.0.0.1:8787/reddit.user.js
@@ -79,9 +80,10 @@ After the initial installation, do not open the generated URL again. The server 
 
 1. ChatGPT: press `Ctrl` + `Shift` + `C` and verify all turns are copied.
 2. Hacker News: verify commenter highlighting, bios, and keyboard navigation.
-3. Reddit: verify badge highlighting/navigation and comment extraction.
-4. Folha: verify unwanted sections are removed.
-5. Techmeme: verify Bloomberg references are highlighted.
+3. Google: search for Hacker News results, press `Control` + `Shift` + `H`, and verify every HN result gets a points badge.
+4. Reddit: verify badge highlighting/navigation and comment extraction.
+5. Folha: verify unwanted sections are removed.
+6. Techmeme: verify Bloomberg references are highlighted.
 
 ### Adding a Script
 
