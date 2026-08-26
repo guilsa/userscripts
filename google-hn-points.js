@@ -8,6 +8,8 @@
 // @match        https://www.google.com/search*
 // @connect      news.ycombinator.com
 // @grant        GM_addStyle
+// @grant        GM_getValue
+// @grant        GM_setValue
 // @grant        GM_xmlhttpRequest
 // ==/UserScript==
 
@@ -16,7 +18,12 @@
 
 	const MAX_CONCURRENT_REQUESTS = 3
 	const MAX_PARENT_HOPS = 12
+	const CACHE_TTL_MS = 30 * 60 * 1000
+	const MAX_CACHE_ENTRIES = 500
+	const CACHE_KEY = 'google-hn-points-cache-v1'
 	const BADGE_CLASS = 'google-hn-points-badge'
+	const pendingHtmlRequests = new Map()
+	const scoreCache = loadScoreCache()
 
 	GM_addStyle(`
 		.${BADGE_CLASS} {
@@ -101,11 +108,112 @@
 		return results
 	}
 
+	function getCanonicalHackerNewsUrl(value, baseUrl = location.href) {
+		try {
+			const url = new URL(value, baseUrl)
+			if (url.hostname !== 'news.ycombinator.com') return null
+
+			url.hash = ''
+
+			if (url.pathname === '/item' && url.searchParams.has('id')) {
+				url.search = `?id=${encodeURIComponent(url.searchParams.get('id'))}`
+			}
+
+			return url.href
+		} catch {
+			return null
+		}
+	}
+
+	function loadScoreCache() {
+		try {
+			const stored = GM_getValue(CACHE_KEY, {})
+			return stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {}
+		} catch {
+			return {}
+		}
+	}
+
+	function saveScoreCache() {
+		const expiry = Date.now() - CACHE_TTL_MS
+
+		for (const [url, entry] of Object.entries(scoreCache)) {
+			if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+				delete scoreCache[url]
+				continue
+			}
+
+			if (Number.isFinite(entry.checkedAt) && entry.checkedAt <= expiry) {
+				delete entry.points
+				delete entry.checkedAt
+			}
+		}
+
+		const entries = Object.entries(scoreCache)
+			.sort(([, left], [, right]) => (right.updatedAt || 0) - (left.updatedAt || 0))
+
+		for (const [url] of entries.slice(MAX_CACHE_ENTRIES)) {
+			delete scoreCache[url]
+		}
+
+		try {
+			GM_setValue(CACHE_KEY, scoreCache)
+		} catch {
+			// A storage failure should not prevent live score lookups.
+		}
+	}
+
+	function getCachedPoints(url) {
+		const requestedUrl = getCanonicalHackerNewsUrl(url)
+		if (!requestedUrl) return null
+
+		const storyUrl = getCanonicalHackerNewsUrl(scoreCache[requestedUrl]?.storyUrl) || requestedUrl
+		const story = scoreCache[storyUrl]
+
+		if (
+			!Number.isFinite(story?.points) ||
+			!Number.isFinite(story?.checkedAt) ||
+			Date.now() - story.checkedAt >= CACHE_TTL_MS
+		) {
+			return null
+		}
+
+		return { points: story.points, storyUrl }
+	}
+
+	function cachePoints(requestedUrl, storyUrl, points) {
+		const requested = getCanonicalHackerNewsUrl(requestedUrl)
+		const story = getCanonicalHackerNewsUrl(storyUrl)
+		if (!requested || !story) return
+
+		const now = Date.now()
+		scoreCache[story] = { storyUrl: story, points, checkedAt: now, updatedAt: now }
+
+		if (requested !== story) {
+			scoreCache[requested] = { storyUrl: story, updatedAt: now }
+		}
+
+		saveScoreCache()
+	}
+
+	function cacheResolution(requestedUrl, storyUrl) {
+		const requested = getCanonicalHackerNewsUrl(requestedUrl)
+		const story = getCanonicalHackerNewsUrl(storyUrl)
+		if (!requested || !story || requested === story) return
+
+		scoreCache[requested] = { storyUrl: story, updatedAt: Date.now() }
+		saveScoreCache()
+	}
+
 	function requestHtml(url) {
-		return new Promise((resolve, reject) => {
+		const requestUrl = getCanonicalHackerNewsUrl(url)
+		if (!requestUrl) return Promise.reject(new Error('Invalid Hacker News URL'))
+		if (pendingHtmlRequests.has(requestUrl)) return pendingHtmlRequests.get(requestUrl)
+
+		const request = new Promise((resolve, reject) => {
 			GM_xmlhttpRequest({
 				method: 'GET',
-				url,
+				url: requestUrl,
 				timeout: 15000,
 				onload(response) {
 					if (response.status >= 200 && response.status < 300) {
@@ -119,6 +227,14 @@
 				ontimeout: () => reject(new Error('Hacker News request timed out')),
 			})
 		})
+
+		pendingHtmlRequests.set(requestUrl, request)
+		request.then(
+			() => pendingHtmlRequests.delete(requestUrl),
+			() => pendingHtmlRequests.delete(requestUrl),
+		)
+
+		return request
 	}
 
 	function readPoints(page) {
@@ -136,34 +252,35 @@
 
 		if (!href) return null
 
-		try {
-			const url = new URL(href, currentUrl)
-			if (url.hostname !== 'news.ycombinator.com') return null
-
-			url.hash = ''
-			return url.href
-		} catch {
-			return null
-		}
+		return getCanonicalHackerNewsUrl(href, currentUrl)
 	}
 
 	async function findPoints(startUrl) {
 		const visitedUrls = new Set()
-		let currentUrl = startUrl
+		const requestedUrl = getCanonicalHackerNewsUrl(startUrl)
+		if (!requestedUrl) return null
+
+		const knownStoryUrl = getCanonicalHackerNewsUrl(scoreCache[requestedUrl]?.storyUrl)
+		let currentUrl = knownStoryUrl || requestedUrl
 
 		for (let hop = 0; hop <= MAX_PARENT_HOPS; hop += 1) {
-			const url = new URL(currentUrl)
-			url.hash = ''
-			currentUrl = url.href
-
 			if (visitedUrls.has(currentUrl)) return null
 			visitedUrls.add(currentUrl)
+
+			const cached = getCachedPoints(currentUrl)
+			if (cached) {
+				cacheResolution(requestedUrl, cached.storyUrl)
+				return cached.points
+			}
 
 			const html = await requestHtml(currentUrl)
 			const page = new DOMParser().parseFromString(html, 'text/html')
 			const points = readPoints(page)
 
-			if (points !== null) return points
+			if (points !== null) {
+				cachePoints(requestedUrl, currentUrl, points)
+				return points
+			}
 
 			currentUrl = getNextScoreUrl(page, currentUrl)
 			if (!currentUrl) return null
@@ -190,6 +307,27 @@
 		badge.title = tooltip
 	}
 
+	function showPointsBadge(badge, points, cached = false) {
+		const noun = points === 1 ? 'point' : 'points'
+		const cacheLabel = cached ? ' (cached)' : ''
+
+		setBadge(
+			badge,
+			'ready',
+			`🔥 ${points.toLocaleString()} HN ${noun}`,
+			`${points.toLocaleString()} points on Hacker News${cacheLabel}`,
+		)
+	}
+
+	function renderCachedResults() {
+		for (const { heading, url } of findHackerNewsResults()) {
+			if (heading.querySelector(`.${BADGE_CLASS}[data-state="ready"]`)) continue
+
+			const cached = getCachedPoints(url)
+			if (cached) showPointsBadge(getOrCreateBadge(heading), cached.points, true)
+		}
+	}
+
 	let toastTimer
 
 	function showToast(message) {
@@ -212,8 +350,14 @@
 
 	async function addPointsToResult({ heading, url }) {
 		const badge = getOrCreateBadge(heading)
+		const cached = getCachedPoints(url)
 
-		if (badge.dataset.state === 'ready') return true
+		if (badge.dataset.state === 'ready' && cached) return true
+
+		if (cached) {
+			showPointsBadge(badge, cached.points, true)
+			return true
+		}
 
 		setBadge(badge, 'loading', 'HN · checking…')
 
@@ -225,8 +369,7 @@
 				return false
 			}
 
-			const noun = points === 1 ? 'point' : 'points'
-			setBadge(badge, 'ready', `🔥 ${points.toLocaleString()} HN ${noun}`, `${points.toLocaleString()} points on Hacker News`)
+			showPointsBadge(badge, points)
 			return true
 		} catch (error) {
 			setBadge(badge, 'error', 'HN · unavailable', error.message)
@@ -296,4 +439,13 @@
 			void run()
 		}
 	}, true)
+
+	let cachedRenderTimer
+	const resultsObserver = new MutationObserver(() => {
+		clearTimeout(cachedRenderTimer)
+		cachedRenderTimer = setTimeout(renderCachedResults, 100)
+	})
+
+	resultsObserver.observe(document.documentElement, { childList: true, subtree: true })
+	renderCachedResults()
 })()
