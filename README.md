@@ -1,14 +1,25 @@
 <div align="center">
 
-# Userscripts
+# 🐒 Userscripts
 
 **Small browser fixes for the sites I use every day.**
 
 </div>
 
-A personal collection of Violentmonkey scripts for Google, [Techmeme](https://www.techmeme.com/), [Hacker News](https://news.ycombinator.com/), ChatGPT, Reddit, Folha de S.Paulo. They add shortcuts, surface useful context, and smooth over the bits of the web that keep getting in the way.
+A personal collection of Violentmonkey scripts for Google, [Techmeme](https://www.techmeme.com/), [Hacker News](https://news.ycombinator.com/), ChatGPT, Reddit, [Folha de S.Paulo](https://www.folha.uol.com.br/).
 
 Everything is plain JavaScript.
+
+## Scripts
+
+- 🌘 `chatgpt-background` — tweaks the ChatGPT dark-mode background color.
+- 📋 `chatgpt-copy-all-turns` — copies an entire conversation as Markdown (Ctrl+Shift+C).
+- 🔎 `google-hn-points` — shows HN points beside Google search results (Ctrl+Shift+H).
+- 🗞️ `hacker-news-highlighter` — highlights commenters and shows their bios on hover (Ctrl+Shift+N/P).
+- 🏅 `reddit` — highlights Top 1% badges and jumps between them (Ctrl+Shift+N/P).
+- ✂️ `reddit-top-1p-inner-text` — extracts the text of Top 1% comments.
+- 📰 `techmeme-highlighter` — highlights "Bloomberg" on Techmeme.
+- 🇧🇷 `folha-sp` — removes sponsor and partnership sections from Folha.
 
 ## Quick start
 
@@ -20,11 +31,7 @@ make serve
 
 Open one of the printed URLs in Firefox with Violentmonkey enabled. After that first install, rebuild when a script changes and let Violentmonkey update the installed copy.
 
-### Build and delivery
-
-- `make build` rebuilds the generated files once.
-- `make watch` rebuilds them whenever a source file changes.
-- `make serve` makes the generated files available to Violentmonkey over local HTTP.
+### How updates work
 
 Violentmonkey runs its own installed copy; it does not execute files from `dist/` directly. The local server makes generated scripts reachable through their `@updateURL` and `@downloadURL` metadata, so it only needs to be running during installation or update checks.
 
@@ -64,8 +71,6 @@ Watch one entry:
 make watch SCRIPT=chatgpt-copy-all-turns
 ```
 
-The `build-chatgpt`, `serve-chatgpt`, and `watch-chatgpt` commands remain as shortcuts for the existing script.
-
 For active development, keep two terminals open:
 
 ```sh
@@ -78,11 +83,12 @@ make watch
 
 Restart the watcher after adding or removing manifest entries so it watches the updated source list.
 
-### Initial Installation
+### Installing
 
 Open a generated userscript URL in Firefox and confirm the Violentmonkey installation:
 
 ```text
+http://127.0.0.1:8787/chatgpt-background.user.js
 http://127.0.0.1:8787/chatgpt-copy-all-turns.user.js
 http://127.0.0.1:8787/folha-sp.user.js
 http://127.0.0.1:8787/google-hn-points.user.js
@@ -91,29 +97,6 @@ http://127.0.0.1:8787/reddit-top-1p-inner-text.user.js
 http://127.0.0.1:8787/reddit.user.js
 http://127.0.0.1:8787/techmeme-highlighter.user.js
 ```
-
-### Updating
-
-1. Run `make build`, `make build SCRIPT=<name>`, or leave `make watch` running.
-2. In Violentmonkey, use Check for updates to install the latest local build. You can instead enable automatic updates, but its interval is not intended for rapid development.
-3. Reload the matching site.
-
-After the initial installation, do not open the generated URL again. The server only needs to be running when Violentmonkey checks for an update. The last installed script continues to run while it is off.
-
-### Migrating from Tampermonkey
-
-1. Disable the Tampermonkey copy before enabling the same script in Violentmonkey, so both managers do not run it.
-2. Install the generated userscript URL through Violentmonkey.
-3. Verify the script on its matching site before removing the Tampermonkey copy.
-
-### Validation Checklist
-
-1. ChatGPT: press `Ctrl` + `Shift` + `C` and verify all turns are copied.
-2. Hacker News: verify commenter highlighting, bios, and keyboard navigation.
-3. Google: search for Hacker News results, press `Control` + `Shift` + `H`, and verify every HN result gets a points badge.
-4. Reddit: verify badge highlighting/navigation and comment extraction.
-5. Folha: verify unwanted sections are removed.
-6. Techmeme: verify Bloomberg references are highlighted.
 
 ### Headless Integration Test
 

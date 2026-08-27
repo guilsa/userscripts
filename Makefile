@@ -1,4 +1,4 @@
-.PHONY: build serve watch build-chatgpt serve-chatgpt watch-chatgpt
+.PHONY: build serve watch
 
 build:
 	node scripts/build-userscripts.mjs $(SCRIPT)
@@ -10,11 +10,3 @@ serve:
 watch:
 	node scripts/watch-userscripts.mjs $(SCRIPT)
 
-build-chatgpt:
-	$(MAKE) build SCRIPT=chatgpt-copy-all-turns
-
-serve-chatgpt:
-	$(MAKE) serve SCRIPT=chatgpt-copy-all-turns
-
-watch-chatgpt:
-	$(MAKE) watch SCRIPT=chatgpt-copy-all-turns
