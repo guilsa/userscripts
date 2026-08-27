@@ -1,6 +1,34 @@
+<div align="center">
+
 # Userscripts
 
-## Local Violentmonkey Development
+**Small browser fixes for the sites I use every day.**
+
+</div>
+
+A personal collection of Violentmonkey scripts for Google, [Techmeme](https://www.techmeme.com/), [Hacker News](https://news.ycombinator.com/), ChatGPT, Reddit, Folha de S.Paulo. They add shortcuts, surface useful context, and smooth over the bits of the web that keep getting in the way.
+
+Everything is plain JavaScript.
+
+## Quick start
+
+Build every script and serve the install links locally:
+
+```sh
+make serve
+```
+
+Open one of the printed URLs in Firefox with Violentmonkey enabled. After that first install, rebuild when a script changes and let Violentmonkey update the installed copy.
+
+### Build and delivery
+
+- `make build` rebuilds the generated files once.
+- `make watch` rebuilds them whenever a source file changes.
+- `make serve` makes the generated files available to Violentmonkey over local HTTP.
+
+Violentmonkey runs its own installed copy; it does not execute files from `dist/` directly. The local server makes generated scripts reachable through their `@updateURL` and `@downloadURL` metadata, so it only needs to be running during installation or update checks.
+
+## Development
 
 `userscripts.json` is the manifest for scripts published through the local development server. The build generates versioned artifacts in `dist/` and injects their `@updateURL` and `@downloadURL` metadata.
 
@@ -16,7 +44,7 @@ Build one entry:
 make build SCRIPT=chatgpt-copy-all-turns
 ```
 
-Serve all generated files at `http://127.0.0.1:8787`:
+Serve all generated files at `http://127.0.0.1:8787` (this also builds first):
 
 ```sh
 make serve

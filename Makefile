@@ -3,7 +3,8 @@
 build:
 	node scripts/build-userscripts.mjs $(SCRIPT)
 
-serve: build
+serve:
+	USERSCRIPTS_BUILD_CONTEXT=serve node scripts/build-userscripts.mjs $(SCRIPT)
 	python3 -m http.server 8787 --directory dist
 
 watch:

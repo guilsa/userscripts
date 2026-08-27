@@ -6,6 +6,7 @@ const selectedNames = scriptNames.length ? scriptNames : Object.keys(manifest.sc
 const timestamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14)
 const version = `${timestamp.slice(0, 8)}.${timestamp.slice(8)}`
 const useColor = process.stdout.isTTY
+const buildContext = process.env.USERSCRIPTS_BUILD_CONTEXT
 
 function style(code, text) {
 	return useColor ? `\u001B[${code}m${text}\u001B[0m` : text
@@ -54,7 +55,9 @@ for (const { script, updatedAt } of selectedScripts) {
 	console.log(`  ${dim('URL')}      ${blue(url)}`)
 }
 
-console.log(`\n${bold('Next steps')}`)
-console.log(`  1. ${dim('Serve')}   ${cyan('make serve')}`)
-console.log(`  2. ${dim('Install')} Open a URL above in Firefox with Violentmonkey enabled.`)
-console.log(`  3. ${dim('Update')}  Rebuild, check for updates in Violentmonkey, then reload the site.`)
+if (!buildContext) {
+	console.log(`\n${bold('Next steps')}`)
+	console.log(`  1. ${dim('Serve')}   ${cyan('make serve')}`)
+	console.log(`  2. ${dim('Install')} Open a URL above in Firefox with Violentmonkey enabled.`)
+	console.log(`  3. ${dim('Update')}  Rebuild, check for updates in Violentmonkey, then reload the site.`)
+}

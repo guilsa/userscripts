@@ -23,6 +23,7 @@ function build() {
 
 	buildInProgress = true
 	const child = spawn(process.execPath, ['scripts/build-userscripts.mjs', ...scriptNames], {
+		env: { ...process.env, USERSCRIPTS_BUILD_CONTEXT: 'watch' },
 		stdio: 'inherit',
 	})
 
